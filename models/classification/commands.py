@@ -60,8 +60,11 @@ def train(input_name, output_file, lr, mincount):
 @click.option('-m', '--model_name')
 @click.option('--k', default=1)
 def test(input_name, model_name, k):
-    model = fasttext.load_model(model_name)
-    n, p, r = model.test(input_name, k=k)
+    input_path = get_input_path(input_name)
+    model_path = get_input_path(model_name)
+
+    model = fasttext.load_model(model_path)
+    n, p, r = model.test(input_path, k=k)
 
     print(json.dumps(
         {'n': n, 'precision': p, 'recall': r, 'k': k}))
