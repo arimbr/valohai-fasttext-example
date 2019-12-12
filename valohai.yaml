@@ -1,0 +1,66 @@
+---
+
+- step:
+    name: preprocess
+    image: arimbr/valohai-fasttext-example
+    command: python cli.py classification preprocess {parameters}
+    inputs:
+      - name: train
+        default: s3://valohai-fasttext-example/reddit/train.tsv
+    parameters:
+     - name: input_name
+       type: string
+       default: train
+     - name: output_file
+       type: string
+       default: train_preprocessed.txt
+     - name: feature
+       type: string
+       default: feature
+     - name: category
+       type: string
+       default: category
+     - name: separator
+       type: string
+       default: ','
+
+- step:
+    name: train
+    image: arimbr/valohai-fasttext-example
+    command: python cli.py classification train {parameters}
+    inputs:
+      - name: train_preprocessed
+        default: s3://valohai-fasttext-example/reddit/train_preprocessed.txt
+    parameters:
+     - name: input_name
+       type: string
+       default: train_preprocessed
+     - name: output_file
+       type: string
+       default: model.bin
+     - name: lr
+       type: float
+       default: 0.01
+     - name: minCount
+       type: integer
+       default: 2
+
+- step:
+    name: test
+    image: arimbr/valohai-fasttext-example
+    command: python cli.py classification test {parameters}
+    inputs:
+      - name: test_preprocessed
+        default: s3://valohai-fasttext-example/reddit/test_preprocessed.txt
+      - name: model
+        default: s3://valohai-fasttext-example/reddit/model.bin
+    parameters:
+     - name: input_name
+       type: string
+       default: test_preprocessed
+     - name: model_name
+       type: string
+       default: model
+     - name: k
+       type: integer
+       default: 1
