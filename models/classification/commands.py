@@ -58,7 +58,7 @@ def train(input_name, output_file, lr, mincount):
 @classification.command()
 @click.option('-i', '--input_name')
 @click.option('-m', '--model_name')
-@click.option('-k', default=1)
+@click.option('--k', default=1)
 def test(input_name, model_name, k):
     model = fasttext.load_model(model_name)
     n, p, r = model.test(input_name, k=k)
