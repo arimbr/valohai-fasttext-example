@@ -10,10 +10,11 @@ RUN apt-get update && apt-get install -y \
 RUN git clone https://github.com/facebookresearch/fastText.git /tmp/fastText && \
   rm -rf /tmp/fastText/.git* && \
   cd /tmp/fastText && \
-  make
+  make && \
+  pip install .
 
 COPY requirements.txt .
 
-RUN pip3 install -r requirements.txt
+RUN pip install -r requirements.txt
 
 WORKDIR /

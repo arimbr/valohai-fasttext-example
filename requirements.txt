@@ -1,3 +1,2 @@
 Click==7.0
-fasttext==0.9.1
 pandas==0.25.3

@@ -6,14 +6,8 @@
     command: python cli.py classification preprocess {parameters}
     inputs:
       - name: train
-        default: s3://valohai-fasttext-example/reddit/train.tsv
+        default: s3://valohai-fasttext-example/toxic_comments/train.csv
     parameters:
-     - name: input_name
-       type: string
-       default: train
-     - name: output_file
-       type: string
-       default: train_preprocessed.txt
      - name: feature
        type: string
        default: feature
@@ -30,14 +24,8 @@
     command: python cli.py classification train {parameters}
     inputs:
       - name: train_preprocessed
-        default: s3://valohai-fasttext-example/reddit/train_preprocessed.txt
+        default: s3://valohai-fasttext-example/toxic_comments/train_preprocessed.txt
     parameters:
-     - name: input_name
-       type: string
-       default: train_preprocessed
-     - name: output_file
-       type: string
-       default: model.bin
      - name: lr
        type: float
        default: 0.01
@@ -46,21 +34,32 @@
        default: 2
 
 - step:
+    name: tune
+    image: arimbr/valohai-fasttext-example
+    command: python cli.py classification tune {parameters}
+    inputs:
+      - name: train_preprocessed
+        default: s3://valohai-fasttext-example/toxic_comments/train_preprocessed.txt
+      - name: test_preprocessed
+        default: s3://valohai-fasttext-example/toxic_comments/test_preprocessed.txt
+    parameters:
+     - name: autotuneMetric
+       type: string
+       default: f1
+     - name: autotuneDuration
+       type: integer
+       default: 3000
+
+- step:
     name: test
     image: arimbr/valohai-fasttext-example
     command: python cli.py classification test {parameters}
     inputs:
       - name: test_preprocessed
-        default: s3://valohai-fasttext-example/reddit/test_preprocessed.txt
+        default: s3://valohai-fasttext-example/toxic_comments/test_preprocessed.txt
       - name: model
-        default: s3://valohai-fasttext-example/reddit/model.bin
+        default: s3://valohai-fasttext-example/toxic_comments/model.bin
     parameters:
-     - name: input_name
-       type: string
-       default: test_preprocessed
-     - name: model_name
-       type: string
-       default: model
      - name: k
        type: integer
        default: 1
