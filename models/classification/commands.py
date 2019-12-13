@@ -89,7 +89,7 @@ def preprocess(train, train_preprocessed, feature, category, separator):
 
 
 @classification.command()
-@click.option('--train', default='train')
+@click.option('--train', default='train_preprocessed')
 @click.option('--model', default='model.bin')
 @click.option('--lr', default=0.01)
 @click.option('--minCount', default=2)
@@ -103,8 +103,8 @@ def train(train, model, lr, mincount):
 
 
 @classification.command()
-@click.option('--train', default='train')
-@click.option('--test', default='test')
+@click.option('--train', default='train_preprocessed')
+@click.option('--test', default='test_preprocessed')
 @click.option('--model', default='model.bin')
 @click.option('--autotuneMetric', default='f1')
 @click.option('--autotuneDuration', default=60*5)
@@ -123,7 +123,7 @@ def tune(train, test, model, autotunemetric, autotuneduration):
 
 
 @classification.command()
-@click.option('--test', default='test')
+@click.option('--test', default='test_preprocessed')
 @click.option('--model', default='model')
 @click.option('--k', default=1)
 def test(test, model, k):
