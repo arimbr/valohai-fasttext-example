@@ -108,7 +108,8 @@ def train(train, model, lr, mincount):
 @click.option('--model', default='model.bin')
 @click.option('--autotuneMetric', default='f1')
 @click.option('--autotuneDuration', default=60*5)
-def tune(train, test, model, autotunemetric, autotuneduration):
+@click.option('--verbose', default=3)
+def tune(train, test, model, autotunemetric, autotuneduration, verbose):
     train_path = get_input_path(train)
     test_path = get_input_path(test)
     model_path = get_output_path(model)
@@ -117,7 +118,8 @@ def tune(train, test, model, autotunemetric, autotuneduration):
         input=train_path,
         autotuneValidationFile=test_path,
         autotuneMetric=autotunemetric,
-        autotuneDuration=autotuneduration)
+        autotuneDuration=autotuneduration,
+        verbose=verbose)
 
     model.save_model(model_path)
 

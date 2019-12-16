@@ -49,6 +49,9 @@
      - name: autotuneDuration
        type: integer
        default: 3000
+     - name: verbose
+       type: integer
+       default: 3
 
 - step:
     name: test
