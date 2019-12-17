@@ -1,68 +1,55 @@
 ---
 
 - step:
-    name: preprocess
+    name: autotune
     image: arimbr/valohai-fasttext-example
-    command: python cli.py classification preprocess {parameters}
+    command: python cli.py classification autotune {parameters}
     inputs:
       - name: train
-        default: s3://valohai-fasttext-example/toxic_comments/train.csv
+        default: s3://valohai-fasttext-example/toxic_comments/train.txt
+      - name: test
+        default: s3://valohai-fasttext-example/toxic_comments/test.txt
     parameters:
-     - name: feature
-       type: string
-       default: feature
-     - name: category
-       type: string
-       default: category
-     - name: separator
-       type: string
-       default: ','
-
-- step:
-    name: train
-    image: arimbr/valohai-fasttext-example
-    command: python cli.py classification train {parameters}
-    inputs:
-      - name: train_preprocessed
-        default: s3://valohai-fasttext-example/toxic_comments/train_preprocessed.txt
-    parameters:
-     - name: lr
-       type: float
-       default: 0.01
-     - name: minCount
-       type: integer
-       default: 2
-
-- step:
-    name: tune
-    image: arimbr/valohai-fasttext-example
-    command: python cli.py classification tune {parameters}
-    inputs:
-      - name: train_preprocessed
-        default: s3://valohai-fasttext-example/toxic_comments/train_preprocessed.txt
-      - name: test_preprocessed
-        default: s3://valohai-fasttext-example/toxic_comments/test_preprocessed.txt
-    parameters:
-     - name: autotuneMetric
+     - name: metric
+       description: metric objective {f1, f1:labelname} [f1]
        type: string
        default: f1
-     - name: autotuneDuration
+     - name: predictions
+       description: number of predictions used for evaluation [1]
        type: integer
-       default: 3000
-     - name: verbose
+       default: 1
+     - name: duration
+       description: maximum duration in seconds [300]
        type: integer
-       default: 3
+       default: 300
+     - name: model_size
+       description: constraint model file size [] (empty = do not quantize)
+       type: string
+       default: ''
 
 - step:
-    name: test
+    name: predict
     image: arimbr/valohai-fasttext-example
-    command: python cli.py classification test {parameters}
+    command: python cli.py classification predict {parameters}
     inputs:
-      - name: test_preprocessed
-        default: s3://valohai-fasttext-example/toxic_comments/test_preprocessed.txt
+      - name: test
+        default: s3://valohai-fasttext-example/toxic_comments/test.txt
       - name: model
         default: s3://valohai-fasttext-example/toxic_comments/model.bin
     parameters:
      - name: k
+       description: number of labels to predict [1]
        type: integer
        default: 1
+
+- pipeline:
+    name: autotune-predict-pipeline
+    nodes:
+      - name: autotune-node
+        type: execution
+        step: autotune
+      - name: predict-node
+        type: execution
+        step: predict
+    edges:
+      - [autotune-node.output.model.bin, predict-node.input.model.bin]
