@@ -182,7 +182,6 @@ def test(test, model, k):
 def predict(test_file, model_file, predictions_file, k):
     test_file = get_input_path(test_file)
     model_file = get_input_path(model_file)
-    predictions_file = get_input_path(predictions_file)
 
     model = fasttext.load_model(model_file)
 

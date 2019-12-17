@@ -52,4 +52,4 @@
         type: execution
         step: predict
     edges:
-      - [autotune-node.output.model.bin, predict-node.input.model.bin]
+      - [autotune-node.output.model.bin, predict-node.input.model]
