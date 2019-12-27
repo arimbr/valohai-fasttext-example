@@ -107,17 +107,17 @@ def merge(f1, f2, how, output, separator):
 
 
 @classification.command()
-@click.option('--input_raw', default='raw')
+@click.option('--input_data', default='input_data')
 @click.option('--output_preprocessed', default='preprocessed.txt')
 @click.option('--feature', default='feature')
 @click.option('--category', default='category')
 @click.option('--separator', default=',')
-def preprocess(input_raw, output_preprocessed, feature, category, separator):
-    input_raw_path = get_input_path(input_raw)
+def preprocess(input_data, output_preprocessed, feature, category, separator):
+    input_data_path = get_input_path(input_data)
     output_preprocessed_path = get_output_path(output_preprocessed)
 
     df = pd.read_csv(
-        input_raw_path,
+        input_data_path,
         sep=separator,
         engine='python')
 

@@ -5,13 +5,9 @@
     image: arimbr/valohai-fasttext-example
     command: python cli.py classification preprocess {parameters}
     inputs:
-      - name: input
+      - name: input_data
         default: s3://valohai-fasttext-example/toxic_comments/train.csv
     parameters:
-     - name: input_raw
-       description: name of the input file (csv)
-       type: string
-       default: train.csv
      - name: output_preprocessed
        description: name of the output file (txt)
        type: string
@@ -23,7 +19,7 @@
      - name: category
        description: category column name
        type: string
-       default: feature
+       default: category
      - name: separator
        description: csv separator
        type: string
