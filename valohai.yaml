@@ -1,6 +1,36 @@
 ---
 
 - step:
+    name: preprocess
+    image: arimbr/valohai-fasttext-example
+    command: python cli.py classification preprocess {parameters}
+    inputs:
+      - name: input
+        default: s3://valohai-fasttext-example/toxic_comments/train.csv
+    parameters:
+     - name: input_raw
+       description: name of the input file (csv)
+       type: string
+       default: train.csv
+     - name: output_preprocessed
+       description: name of the output file (txt)
+       type: string
+       default: train.txt
+     - name: feature
+       description: feature column name
+       type: string
+       default: feature
+     - name: category
+       description: category column name
+       type: string
+       default: feature
+     - name: separator
+       description: csv separator
+       type: string
+       default: ','
+
+
+- step:
     name: autotune
     image: arimbr/valohai-fasttext-example
     command: python cli.py classification autotune {parameters}
@@ -45,6 +75,18 @@
 - pipeline:
     name: autotune-predict-pipeline
     nodes:
+      - name: preprocess-train-node
+        type: execution
+        step: preprocess
+        override:
+          parameters:
+            - output_preprocessed: train.txt
+      - name: preprocess-test-node
+        type: execution
+        step: preprocess
+        override:
+          parameters:
+            - output_preprocessed: test.txt
       - name: autotune-node
         type: execution
         step: autotune
@@ -52,4 +94,6 @@
         type: execution
         step: predict
     edges:
+      - [preprocess-train-node.output.train.txt, autotune-node.input.train]
+      - [preprocess-train-node.output.test.txt, autotune-node.input.test]
       - [autotune-node.output.model.bin, predict-node.input.model]

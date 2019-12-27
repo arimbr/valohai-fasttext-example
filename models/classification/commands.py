@@ -107,59 +107,60 @@ def merge(f1, f2, how, output, separator):
 
 
 @classification.command()
-@click.option('--train', default='train')
-@click.option('--train_preprocessed', default='train_preprocessed.txt')
+@click.option('--input_raw', default='raw')
+@click.option('--output_preprocessed', default='preprocessed.txt')
 @click.option('--feature', default='feature')
 @click.option('--category', default='category')
 @click.option('--separator', default=',')
-def preprocess(train, train_preprocessed, feature, category, separator):
-    train_path = get_input_path(train)
-    train_preprocessed_path = get_output_path(train_preprocessed)
+def preprocess(input_raw, output_preprocessed, feature, category, separator):
+    input_raw_path = get_input_path(input_raw)
+    output_preprocessed_path = get_output_path(output_preprocessed)
 
     df = pd.read_csv(
-        train_path,
+        input_raw_path,
         sep=separator,
         engine='python')
 
-    with open(train_preprocessed_path, 'w') as output:
+    with open(output_preprocessed_path, 'w') as output:
         for f, c in zip(df[feature], df[category]):
             processed_f = process_string(f)
             output.write(f'{processed_f} __label__{c}\n')
 
 
 @classification.command()
-@click.option('--train_file', default='train')
-@click.option('--test_file', default='test')
-@click.option('--model_file', default='model.bin')
-@click.option('--parameters_file', default='parameters.json')
+@click.option('--input_train', default='train')
+@click.option('--input_test', default='test')
+@click.option('--output_model', default='model.bin')
+@click.option('--output_parameters', default='parameters.json')
 @click.option('--metric', default='f1')
 @click.option('--predictions', default=1)
 @click.option('--duration', default=300)
 @click.option('--model_size', default='')
 @click.option('--verbose', default=3)
-def autotune(train_file, test_file, model_file, parameters_file,
+def autotune(input_train, input_test, input_model, output_parameters,
     metric, predictions, duration, model_size, verbose):
-    train_file = get_input_path(train_file)
-    test_file = get_input_path(test_file)
-    model_file = get_output_path(model_file)
-    parameters_file = get_output_path(parameters_file)
+    # TODO: also print metrics to be able to compare runs
+    input_train_path = get_input_path(input_train)
+    input_test_path = get_input_path(input_test)
+    output_model_path = get_output_path(input_model)
+    output_parameters_path = get_output_path(output_parameters)
 
     # Train model
     model = fasttext.train_supervised(
-        input=train_file,
-        autotuneValidationFile=test_file,
+        input=input_train_path,
+        autotuneValidationFile=input_test_path,
         autotuneMetric=metric,
         autotuneDuration=duration,
         autotuneModelSize=model_size,
         verbose=verbose)
 
     # Save model
-    model.save_model(model_file)
+    model.save_model(output_model_path)
 
     # Save best parameters
     best_parameters = get_model_parameters(model)
     print(json.dumps(best_parameters))
-    with open(parameters_file, 'w') as f:
+    with open(output_parameters_path, 'w') as f:
         json.dump(best_parameters, f)
 
 
@@ -168,6 +169,7 @@ def autotune(train_file, test_file, model_file, parameters_file,
 @click.option('--model', default='model')
 @click.option('--k', default=1)
 def test(test, model, k):
+    # TODO: output also predictions for debugging
     test_path = get_input_path(test)
     model_path = get_input_path(model)
 
@@ -179,25 +181,29 @@ def test(test, model, k):
 
 
 @classification.command()
-@click.option('--test_file', default='test')
-@click.option('--model_file', default='model')
-@click.option('--predictions_file', default='predictions.csv')
+@click.option('--input_test', default='test')
+@click.option('--input_model', default='model')
+@click.option('--output_predictions', default='predictions.csv')
 @click.option('--k', default=1)
-def predict(test_file, model_file, predictions_file, k):
-    test_file = get_input_path(test_file)
-    model_file = get_input_path(model_file)
-    predictions_file = get_output_path(predictions_file)
+def predict(input_test, input_model, output_predictions, k):
+    # TODO: recommend valohai to accept an argument of type dict
+    # so that different models can be tested with the same
+    # execution.
+    input_test_path = get_input_path(input_test)
+    input_model_path = get_input_path(input_model)
+    output_predictions_path = get_output_path(output_predictions)
 
-    model = fasttext.load_model(model_file)
+    model = fasttext.load_model(input_model_path)
 
-    with open(test_file) as f:
-        labels, probas = model.predict(
+    with open(input_test_path) as f:
+        all_labels, all_probas = model.predict(
             [get_feature(line) for line in f], k=k)
 
+        # TODO: why probas allways ordered?
         df = pd.DataFrame(
-            dict(zip(label, proba))
-            for label, proba in zip(labels, probas)
+            dict(zip(record_labels, record_probas))
+            for record_labels, record_probas in zip(all_labels, all_probas)
         )
         df.columns = df.columns.str.lstrip('__label__')
 
-    df.to_csv(predictions_file, index=False)
+    df.to_csv(output_predictions_path, index=False)
