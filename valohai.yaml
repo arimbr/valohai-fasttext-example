@@ -78,15 +78,9 @@
       - name: preprocess-train-node
         type: execution
         step: preprocess
-        override:
-          parameters:
-            - output_preprocessed: train.txt
       - name: preprocess-test-node
         type: execution
         step: preprocess
-        override:
-          parameters:
-            - output_preprocessed: test.txt
       - name: autotune-node
         type: execution
         step: autotune
