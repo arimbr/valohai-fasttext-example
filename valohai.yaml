@@ -95,5 +95,5 @@
         step: predict
     edges:
       - [preprocess-train-node.output.train.txt, autotune-node.input.train]
-      - [preprocess-train-node.output.test.txt, autotune-node.input.test]
+      - [preprocess-test-node.output.test.txt, autotune-node.input.test]
       - [autotune-node.output.model.bin, predict-node.input.model]
