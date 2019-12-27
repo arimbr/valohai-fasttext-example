@@ -137,12 +137,12 @@ def preprocess(input_data, output_preprocessed, feature, category, separator):
 @click.option('--duration', default=300)
 @click.option('--model_size', default='')
 @click.option('--verbose', default=3)
-def autotune(input_train, input_test, input_model, output_parameters,
+def autotune(input_train, input_test, output_model, output_parameters,
     metric, predictions, duration, model_size, verbose):
     # TODO: also print metrics to be able to compare runs
     input_train_path = get_input_path(input_train)
     input_test_path = get_input_path(input_test)
-    output_model_path = get_output_path(input_model)
+    output_model_path = get_output_path(output_model)
     output_parameters_path = get_output_path(output_parameters)
 
     # Train model
