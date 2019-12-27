@@ -44,6 +44,10 @@ def get_model_parameters(model):
     return parameters
 
 
+def get_feature(text):
+    return text.split('__label__')[0].strip()
+
+
 def process_string(s):
     # Transform multiple spaces and \n to a single space
     s = re.sub(r'\s{1,}', ' ', s)
@@ -187,7 +191,8 @@ def predict(test_file, model_file, predictions_file, k):
     model = fasttext.load_model(model_file)
 
     with open(test_file) as f:
-        labels, probas = model.predict([line.rstrip() for line in f], k=k)
+        labels, probas = model.predict(
+            [get_feature(line) for line in f], k=k)
 
         df = pd.DataFrame(
             dict(zip(label, proba))
