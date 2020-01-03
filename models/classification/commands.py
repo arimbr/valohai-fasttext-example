@@ -3,6 +3,7 @@ import json
 import string
 import io
 import multiprocessing
+import shutil
 
 import click
 import pandas as pd
@@ -195,3 +196,38 @@ def test(input_test, input_model, output_predictions, k):
         df.columns = df.columns.str.lstrip('__label__')
 
     df.to_csv(output_predictions_path, index=False)
+
+    # TODO: output metrics
+    # TODO: output confusion matrix
+
+
+@classification.command()
+@click.option('--input_train', default='train')
+@click.option('--input_test', default='test')
+@click.option('--input_parameters', default='parameters')
+@click.option('--output_data', default='data.txt')
+@click.option('--output_model', default='model.bin')
+def train(input_train, input_test, input_parameters, output_data, output_model):
+    input_train_path = get_input_path(input_train)
+    input_test_path = get_input_path(input_test)
+    input_parameters_path = get_input_path(input_parameters)
+    output_data_path = get_output_path(output_data)
+    output_model_path = get_output_path(output_model)
+
+    # Concatenate train and test data
+    with open(output_data_path, 'w') as output_data_file:
+        for path in [input_train_path, input_test_path]:
+            with open(path,'rb') as f:
+                shutil.copyfileobj(f, output_data_file)
+
+    # Parse parameters
+    with open(input_parameters_path) as f:
+        parameters = json.load(f)
+
+    # Train model
+    model = fasttext.train_supervised(
+        input=output_data_path,
+        **parameters)
+
+    # Save best model
+    model.save_model(output_model_path)

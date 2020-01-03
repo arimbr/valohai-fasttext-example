@@ -54,9 +54,9 @@
        default: ''
 
 - step:
-    name: predict
+    name: test
     image: arimbr/valohai-fasttext-example
-    command: python cli.py classification predict {parameters}
+    command: python cli.py classification test {parameters}
     inputs:
       - name: test
         default: s3://valohai-fasttext-example/toxic_comments/test.txt
@@ -68,22 +68,41 @@
        type: integer
        default: 1
 
+- step:
+    name: train
+    image: arimbr/valohai-fasttext-example
+    command: python cli.py classification train {parameters}
+    inputs:
+      - name: train
+        default: s3://valohai-fasttext-example/toxic_comments/train.txt
+      - name: test
+        default: s3://valohai-fasttext-example/toxic_comments/test.txt
+      - name: parameters
+        default: s3://valohai-fasttext-example/toxic_comments/parameters.json
+
 - pipeline:
-    name: autotune-predict-pipeline
+    name: fasttext-pipeline
     nodes:
-      - name: preprocess-train-node
+      - name: preprocess-train
         type: execution
         step: preprocess
-      - name: preprocess-test-node
+      - name: preprocess-test
         type: execution
         step: preprocess
-      - name: autotune-node
+      - name: autotune
         type: execution
         step: autotune
-      - name: predict-node
+      - name: test
         type: execution
-        step: predict
+        step: test
+      - name: train
+        type: execution
+        step: train
     edges:
-      - [preprocess-train-node.output.train.txt, autotune-node.input.train]
-      - [preprocess-test-node.output.test.txt, autotune-node.input.test]
-      - [autotune-node.output.model.bin, predict-node.input.model]
+      - [preprocess-train.output.train.txt, autotune.input.train]
+      - [preprocess-train.output.train.txt, train.input.train]
+      - [preprocess-test.output.test.txt, autotune.input.test]
+      - [preprocess-test.output.test.txt, train.input.test]
+      - [preprocess-test.output.test.txt, test.input.test]
+      - [autotune.output.model.bin, test.input.model]
+      - [autotune.output.parameters.json, train.input.parameters]
