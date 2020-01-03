@@ -133,19 +133,18 @@ def preprocess(input_data, output_preprocessed, feature, category, separator):
 @click.option('--output_model', default='model.bin')
 @click.option('--output_parameters', default='parameters.json')
 @click.option('--metric', default='f1')
-@click.option('--predictions', default=1)
+@click.option('--k', default=1)
 @click.option('--duration', default=300)
 @click.option('--model_size', default='')
 @click.option('--verbose', default=3)
 def autotune(input_train, input_test, output_model, output_parameters,
-    metric, predictions, duration, model_size, verbose):
-    # TODO: also print metrics to be able to compare runs
+    metric, k, duration, model_size, verbose):
     input_train_path = get_input_path(input_train)
     input_test_path = get_input_path(input_test)
     output_model_path = get_output_path(output_model)
     output_parameters_path = get_output_path(output_parameters)
 
-    # Train model
+    # Autotune model
     model = fasttext.train_supervised(
         input=input_train_path,
         autotuneValidationFile=input_test_path,
@@ -154,8 +153,10 @@ def autotune(input_train, input_test, output_model, output_parameters,
         autotuneModelSize=model_size,
         verbose=verbose)
 
-    # Save model
-    model.save_model(output_model_path)
+    # Test best model
+    n, p, r = model.test(input_test_path, k=k)
+    print(json.dumps(
+        {'n': n, 'precision': p, 'recall': r, 'k': k}))
 
     # Save best parameters
     best_parameters = get_model_parameters(model)
@@ -163,21 +164,8 @@ def autotune(input_train, input_test, output_model, output_parameters,
     with open(output_parameters_path, 'w') as f:
         json.dump(best_parameters, f)
 
-
-@classification.command()
-@click.option('--test', default='test')
-@click.option('--model', default='model')
-@click.option('--k', default=1)
-def test(test, model, k):
-    # TODO: output also predictions for debugging
-    test_path = get_input_path(test)
-    model_path = get_input_path(model)
-
-    model = fasttext.load_model(model_path)
-    n, p, r = model.test(test_path, k=k)
-
-    print(json.dumps(
-        {'n': n, 'precision': p, 'recall': r, 'k': k}))
+    # Save best model
+    model.save_model(output_model_path)
 
 
 @classification.command()
@@ -185,7 +173,7 @@ def test(test, model, k):
 @click.option('--input_model', default='model')
 @click.option('--output_predictions', default='predictions.csv')
 @click.option('--k', default=1)
-def predict(input_test, input_model, output_predictions, k):
+def test(input_test, input_model, output_predictions, k):
     # TODO: recommend valohai to accept an argument of type dict
     # so that different models can be tested with the same
     # execution.

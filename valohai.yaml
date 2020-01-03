@@ -40,7 +40,7 @@
        description: metric objective {f1, f1:labelname} [f1]
        type: string
        default: f1
-     - name: predictions
+     - name: k
        description: number of predictions used for evaluation [1]
        type: integer
        default: 1
