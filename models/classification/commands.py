@@ -217,7 +217,7 @@ def train(input_train, input_test, input_parameters, output_data, output_model):
     # Concatenate train and test data
     with open(output_data_path, 'w') as output_data_file:
         for path in [input_train_path, input_test_path]:
-            with open(path,'rb') as f:
+            with open(path, 'r') as f:
                 shutil.copyfileobj(f, output_data_file)
 
     # Parse parameters
