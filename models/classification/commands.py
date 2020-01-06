@@ -45,8 +45,9 @@ def get_model_parameters(model):
     return parameters
 
 
-def get_feature(text):
-    return text.split('__label__')[0].strip()
+def split_text(text):
+    text, label = text.split('__label__')
+    return text.strip(), label.strip()
 
 
 def process_string(s):
@@ -122,6 +123,7 @@ def preprocess(input_data, output_preprocessed, feature, category, separator):
         sep=separator,
         engine='python')
 
+    # TODO: operate on the DataFrame to add new column
     with open(output_preprocessed_path, 'w') as output:
         for f, c in zip(df[feature], df[category]):
             processed_f = process_string(f)
@@ -175,9 +177,6 @@ def autotune(input_train, input_test, output_model, output_parameters,
 @click.option('--output_predictions', default='predictions.csv')
 @click.option('--k', default=1)
 def test(input_test, input_model, output_predictions, k):
-    # TODO: recommend valohai to accept an argument of type dict
-    # so that different models can be tested with the same
-    # execution.
     input_test_path = get_input_path(input_test)
     input_model_path = get_input_path(input_model)
     output_predictions_path = get_output_path(output_predictions)
@@ -185,20 +184,26 @@ def test(input_test, input_model, output_predictions, k):
     model = fasttext.load_model(input_model_path)
 
     with open(input_test_path) as f:
-        all_labels, all_probas = model.predict(
-            [get_feature(line) for line in f], k=k)
-
-        # TODO: why probas allways ordered?
         df = pd.DataFrame(
-            dict(zip(record_labels, record_probas))
-            for record_labels, record_probas in zip(all_labels, all_probas)
-        )
-        df.columns = df.columns.str.lstrip('__label__')
+            (split_text(line) for line in f),
+            columns=['feature', 'label'])
+
+        all_labels, all_probs = model.predict(list(df['feature']), k=k)
+
+        columns = [f'prediction@{i}' for i in range(1, k+1)] + [f'p@{i}' for i in range(1, k+1)]
+        predictions_df = pd.DataFrame((
+            list(record_labels) + list(record_probs)
+            for record_labels, record_probs in zip(all_labels, all_probs)
+        ), columns=columns)
+
+    df = df.join(predictions_df)
+
+    # Remove __label__ from prediction columns
+    for col in df.columns:
+        if col.startswith('prediction@'):
+            df[col] = df[col].str.lstrip('__label__')
 
     df.to_csv(output_predictions_path, index=False)
-
-    # TODO: output metrics
-    # TODO: output confusion matrix
 
 
 @classification.command()
