@@ -201,7 +201,7 @@ def test(input_test, input_model, output_predictions, k):
     # Remove __label__ from prediction columns
     for col in df.columns:
         if col.startswith('prediction@'):
-            df[col] = df[col].str.lstrip('__label__')
+            df[col] = df[col].str.replace('__label__', '')
 
     df.to_csv(output_predictions_path, index=False)
 
