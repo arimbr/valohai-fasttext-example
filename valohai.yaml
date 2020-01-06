@@ -6,7 +6,7 @@
     command: python cli.py classification preprocess {parameters}
     inputs:
       - name: input_data
-        default: s3://valohai-fasttext-example/toxic_comments/train.csv
+        default: s3://valohai-fasttext-example/bbc/train.csv
     parameters:
      - name: output_preprocessed
        description: name of the output file (txt)
@@ -15,7 +15,7 @@
      - name: feature
        description: feature column name
        type: string
-       default: feature
+       default: text
      - name: category
        description: category column name
        type: string
@@ -32,9 +32,9 @@
     command: python cli.py classification autotune {parameters}
     inputs:
       - name: train
-        default: s3://valohai-fasttext-example/toxic_comments/train.txt
+        default: s3://valohai-fasttext-example/bbc/train.txt
       - name: test
-        default: s3://valohai-fasttext-example/toxic_comments/test.txt
+        default: s3://valohai-fasttext-example/bbc/test.txt
     parameters:
      - name: metric
        description: metric objective {f1, f1:labelname} [f1]
@@ -59,9 +59,9 @@
     command: python cli.py classification test {parameters}
     inputs:
       - name: test
-        default: s3://valohai-fasttext-example/toxic_comments/test.txt
+        default: s3://valohai-fasttext-example/bbc/test.txt
       - name: model
-        default: s3://valohai-fasttext-example/toxic_comments/model.bin
+        default: s3://valohai-fasttext-example/bbc/model.bin
     parameters:
      - name: k
        description: number of labels to predict [1]
@@ -74,11 +74,11 @@
     command: python cli.py classification train {parameters}
     inputs:
       - name: train
-        default: s3://valohai-fasttext-example/toxic_comments/train.txt
+        default: s3://valohai-fasttext-example/bbc/train.txt
       - name: test
-        default: s3://valohai-fasttext-example/toxic_comments/test.txt
+        default: s3://valohai-fasttext-example/bbc/test.txt
       - name: parameters
-        default: s3://valohai-fasttext-example/toxic_comments/parameters.json
+        default: s3://valohai-fasttext-example/bbc/parameters.json
 
 - pipeline:
     name: fasttext-pipeline
@@ -92,7 +92,21 @@
         override:
           parameters:
             - name: output_preprocessed
+              description: name of the output file (txt)
+              type: string
               default: test.txt
+            - name: feature
+              description: feature column name
+              type: string
+              default: text
+            - name: category
+              description: category column name
+              type: string
+              default: category
+            - name: separator
+              description: csv separator
+              type: string
+              default: ','
       - name: autotune
         type: execution
         step: autotune
