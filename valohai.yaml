@@ -89,6 +89,10 @@
       - name: preprocess-test
         type: execution
         step: preprocess
+        override:
+          parameters:
+            - name: output_preprocessed
+              default: test.txt
       - name: autotune
         type: execution
         step: autotune
