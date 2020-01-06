@@ -90,6 +90,9 @@
         type: execution
         step: preprocess
         override:
+          inputs:
+            - name: input_data
+              default: s3://valohai-fasttext-example/bbc/test.csv
           parameters:
             - name: output_preprocessed
               description: name of the output file (txt)
