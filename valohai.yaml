@@ -108,10 +108,10 @@
       #  type: execution
       #  step: evaluate
     edges:
-      - [preprocess.output.data.preprocessed.csv, split.input.data]
-      - [preprocess.output.data.preprocessed.csv, train.input.data]
+      - [preprocess.output.data.preprocessed.txt, split.input.data]
+      - [preprocess.output.data.preprocessed.txt, train.input.data]
       - [split.output.train.preprocessed.txt, autotune.input.train]
       - [split.output.test.preprocessed.txt, autotune.input.test]
       - [autotune.output.parameters.json, train.input.parameters]
       - [autotune.output.model.bin, predict.input.model]
-      # - [predict.output.test.predictions.csv, evaluate.input.predictions]
+      # - [predict.output.test.predictions.txt, evaluate.input.predictions]
