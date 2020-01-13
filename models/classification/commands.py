@@ -2,6 +2,7 @@ import re
 import json
 import string
 import io
+import os
 import multiprocessing
 import shutil
 
@@ -10,6 +11,11 @@ import pandas as pd
 import fasttext
 
 from utils import get_input_path, get_output_path
+
+
+FEATURE_COLUMN = 'text'
+CATEGORY_COLUMN = 'category'
+RANDOM_SEED = 42
 
 train_parameters = {
     'lr': 0.1,
@@ -67,67 +73,59 @@ def classification():
 
 
 @classification.command()
-@click.option('--input')
-@click.option('--output')
-@click.option('--id_vars')
-@click.option('--value_vars')
-@click.option('--var_name', default='category')
-@click.option('--value_name', default='value')
-@click.option('-s', '--separator', default=',')
-def melt(input, output, id_vars, value_vars, var_name, value_name, separator):
-    df = pd.read_csv(
-        input,
-        sep=separator,
-        engine='python')
-    df = pd.melt(
-        df,
-        id_vars=id_vars.split(','),
-        value_vars=value_vars.split(','),
-        var_name=var_name,
-        value_name=value_name
-    )
+@click.option('--input_dir', default='input_dir')
+@click.option('--output_file', default='output_file')
+def collect_bbc_data(input_dir, output_file):
 
-    # Drop not assigned features
-    df[value_name] = df[value_name].fillna(0).astype(float)
-    df = df[~df[value_name].isna() & (df[value_name] > 0)]
+    def rows_generator():
+        for root, _, files in os.walk(input_dir):
+            category = root.split('/')[-1]
+            for fname in files:
+                if fname.endswith('.txt'):
+                    text = open(os.path.join(root, fname), 'rb').read()
+                    yield text.decode('latin-1'), category
 
-    df.to_csv(output, index=False)
+    df = pd.DataFrame(rows_generator(), columns=['text', 'category'])
+
+    df.to_csv(output_file, index=False)
 
 
 @classification.command()
-@click.option('--f1')
-@click.option('--f2')
-@click.option('--how', default='inner')
-@click.option('--output')
-@click.option('--separator', default=',')
-def merge(f1, f2, how, output, separator):
-    df1 = pd.read_csv(f1, sep=separator, engine='python')
-    df2 = pd.read_csv(f2, sep=separator, engine='python')
-    df = df1.merge(df2, how=how)
+@click.option('--input_data', default='data')
+@click.option('--output_train', default='train.preprocessed.txt')
+@click.option('--output_test', default='test.preprocessed.txt')
+@click.option('--test_ratio', default=0.25)
+def split(input_data, output_train, output_test, test_ratio):
+    input_data_path = get_input_path(input_data)
+    output_train_path = get_output_path(output_train)
+    output_test_path = get_output_path(output_test)
 
-    df.to_csv(output, index=False)
+    with open(input_data_path, 'rb') as f:
+        data = f.read().split('\n')
+
+    index = round(len(data) * test_ratio)
+
+    with open(output_train_path, 'w') as f:
+        f.write('\n'.join(data[:index]))
+
+    with open(output_test_path, 'w') as f:
+        f.write('\n'.join(data[index:]))
 
 
 @classification.command()
-@click.option('--input_data', default='input_data')
-@click.option('--output_preprocessed', default='preprocessed.txt')
-@click.option('--feature', default='feature')
-@click.option('--category', default='category')
-@click.option('--separator', default=',')
-def preprocess(input_data, output_preprocessed, feature, category, separator):
+@click.option('--input_data', default='data')
+@click.option('--output_preprocessed', default='data.preprocessed.txt')
+def preprocess(input_data, output_preprocessed):
     input_data_path = get_input_path(input_data)
     output_preprocessed_path = get_output_path(output_preprocessed)
 
     df = pd.read_csv(
         input_data_path,
-        sep=separator,
         engine='python')
 
-    # TODO: operate on the DataFrame to add new column
     with open(output_preprocessed_path, 'w') as output:
-        for f, c in zip(df[feature], df[category]):
-            processed_f = process_string(f)
-            output.write(f'{processed_f} __label__{c}\n')
+        for f, c in zip(df[FEATURE_COLUMN], df[CATEGORY_COLUMN]):
+            output.write(f'{process_string(f)} __label__{c}\n')
 
 
 @classification.command()
@@ -172,23 +170,24 @@ def autotune(input_train, input_test, output_model, output_parameters,
 
 
 @classification.command()
-@click.option('--input_test', default='test')
+@click.option('--input_data', default='data')
 @click.option('--input_model', default='model')
 @click.option('--output_predictions', default='predictions.csv')
 @click.option('--k', default=1)
-def test(input_test, input_model, output_predictions, k):
-    input_test_path = get_input_path(input_test)
+def predict(input_data, input_model, output_predictions, k):
+    input_data_path = get_input_path(input_data)
     input_model_path = get_input_path(input_model)
     output_predictions_path = get_output_path(output_predictions)
 
     model = fasttext.load_model(input_model_path)
 
-    with open(input_test_path) as f:
+    # TODO: make this work also with unlabelled data
+    with open(input_data_path) as f:
         df = pd.DataFrame(
             (split_text(line) for line in f),
-            columns=['feature', 'label'])
+            columns=['text', 'label'])
 
-        all_labels, all_probs = model.predict(list(df['feature']), k=k)
+        all_labels, all_probs = model.predict(list(df['text']), k=k)
 
         columns = [f'prediction@{i}' for i in range(1, k+1)] + [f'p@{i}' for i in range(1, k+1)]
         predictions_df = pd.DataFrame((
@@ -207,23 +206,13 @@ def test(input_test, input_model, output_predictions, k):
 
 
 @classification.command()
-@click.option('--input_train', default='train')
-@click.option('--input_test', default='test')
+@click.option('--input_data', default='data')
 @click.option('--input_parameters', default='parameters')
-@click.option('--output_data', default='data.txt')
 @click.option('--output_model', default='model.bin')
-def train(input_train, input_test, input_parameters, output_data, output_model):
-    input_train_path = get_input_path(input_train)
-    input_test_path = get_input_path(input_test)
+def train(input_data, input_parameters, output_model):
+    input_data_path = get_input_path(input_data)
     input_parameters_path = get_input_path(input_parameters)
-    output_data_path = get_output_path(output_data)
     output_model_path = get_output_path(output_model)
-
-    # Concatenate train and test data
-    with open(output_data_path, 'w') as output_data_file:
-        for path in [input_train_path, input_test_path]:
-            with open(path, 'r') as f:
-                shutil.copyfileobj(f, output_data_file)
 
     # Parse parameters
     with open(input_parameters_path) as f:
@@ -231,7 +220,7 @@ def train(input_train, input_test, input_parameters, output_data, output_model):
 
     # Train model
     model = fasttext.train_supervised(
-        input=output_data_path,
+        input=input_data_path,
         **parameters)
 
     # Save best model

@@ -5,26 +5,34 @@
     image: arimbr/valohai-fasttext-example
     command: python cli.py classification preprocess {parameters}
     inputs:
-      - name: input_data
-        default: s3://valohai-fasttext-example/bbc/train.csv
+      - name: data
+        default: s3://valohai-fasttext-example/bbc/data.csv
     parameters:
      - name: output_preprocessed
-       description: name of the output file (txt)
+       description: name of the output file
        type: string
-       default: train.txt
-     - name: feature
-       description: feature column name
-       type: string
-       default: text
-     - name: category
-       description: category column name
-       type: string
-       default: category
-     - name: separator
-       description: csv separator
-       type: string
-       default: ','
+       default: data.preprocessed.txt
 
+- step:
+    name: split
+    image: arimbr/valohai-fasttext-example
+    command: python cli.py classification split {parameters}
+    inputs:
+      - name: data
+        default: s3://valohai-fasttext-example/bbc/data.preprocessed.txt
+    parameters:
+      - name: output_train
+        description: name of the train output file
+        type: string
+        default: train.preprocessed.txt
+      - name: output_test
+        description: name of the test output file
+        type: string
+        default: test.preprocessed.txt
+      - name: test_ratio
+        description: ratio of the test data
+        type: float
+        default: 0.25
 
 - step:
     name: autotune
@@ -32,9 +40,9 @@
     command: python cli.py classification autotune {parameters}
     inputs:
       - name: train
-        default: s3://valohai-fasttext-example/bbc/train.txt
+        default: s3://valohai-fasttext-example/bbc/train.preprocessed.txt
       - name: test
-        default: s3://valohai-fasttext-example/bbc/test.txt
+        default: s3://valohai-fasttext-example/bbc/test.preprocessed.txt
     parameters:
      - name: metric
        description: metric objective {f1, f1:labelname} [f1]
@@ -54,14 +62,14 @@
        default: ''
 
 - step:
-    name: test
+    name: predict
     image: arimbr/valohai-fasttext-example
-    command: python cli.py classification test {parameters}
+    command: python cli.py classification predict {parameters}
     inputs:
-      - name: test
-        default: s3://valohai-fasttext-example/bbc/test.txt
+      - name: data
+        default: s3://valohai-fasttext-example/bbc/test.preprocessed.txt
       - name: model
-        default: s3://valohai-fasttext-example/bbc/model.bin
+        default: s3://valohai-fasttext-example/bbc/train.model.bin
     parameters:
      - name: k
        description: number of labels to predict [1]
@@ -73,43 +81,20 @@
     image: arimbr/valohai-fasttext-example
     command: python cli.py classification train {parameters}
     inputs:
-      - name: train
-        default: s3://valohai-fasttext-example/bbc/train.txt
-      - name: test
-        default: s3://valohai-fasttext-example/bbc/test.txt
+      - name: data
+        default: s3://valohai-fasttext-example/bbc/data.preprocessed.txt
       - name: parameters
         default: s3://valohai-fasttext-example/bbc/parameters.json
 
 - pipeline:
     name: fasttext-pipeline
     nodes:
-      - name: preprocess-train
+      - name: split
+        type: execution
+        step: split
+      - name: preprocess
         type: execution
         step: preprocess
-      - name: preprocess-test
-        type: execution
-        step: preprocess
-        override:
-          inputs:
-            - name: input_data
-              default: s3://valohai-fasttext-example/bbc/test.csv
-          parameters:
-            - name: output_preprocessed
-              description: name of the output file (txt)
-              type: string
-              default: test.txt
-            - name: feature
-              description: feature column name
-              type: string
-              default: text
-            - name: category
-              description: category column name
-              type: string
-              default: category
-            - name: separator
-              description: csv separator
-              type: string
-              default: ','
       - name: autotune
         type: execution
         step: autotune
@@ -119,11 +104,17 @@
       - name: train
         type: execution
         step: train
+      - name: predict
+        type: execution
+        step: predict
+      #- name: evaluate
+      #  type: execution
+      #  step: evaluate
     edges:
-      - [preprocess-train.output.train.txt, autotune.input.train]
-      - [preprocess-train.output.train.txt, train.input.train]
-      - [preprocess-test.output.test.txt, autotune.input.test]
-      - [preprocess-test.output.test.txt, train.input.test]
-      - [preprocess-test.output.test.txt, test.input.test]
-      - [autotune.output.model.bin, test.input.model]
+      - [preprocess.output.data.preprocessed.csv, split.input.data]
+      - [preprocess.output.data.preprocessed.csv, train.input.data]
+      - [split.output.train.preprocessed.txt, autotune.input.train]
+      - [split.output.test.preprocessed.txt, autotune.input.test]
       - [autotune.output.parameters.json, train.input.parameters]
+      - [autotune.output.model.bin, predict.input.model]
+      # - [predict.output.test.predictions.csv, evaluate.input.predictions]
