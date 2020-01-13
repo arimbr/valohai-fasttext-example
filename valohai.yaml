@@ -98,9 +98,6 @@
       - name: autotune
         type: execution
         step: autotune
-      - name: test
-        type: execution
-        step: test
       - name: train
         type: execution
         step: train
