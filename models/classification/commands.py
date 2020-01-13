@@ -101,7 +101,6 @@ def split(input_data, output_train, output_test, test_ratio):
     output_test_path = get_output_path(output_test)
 
     with open(input_data_path, 'r') as f:
-        import ipdb; ipdb.set_trace()
         data = f.read().split('\n')
 
     index = round(len(data) * test_ratio)
