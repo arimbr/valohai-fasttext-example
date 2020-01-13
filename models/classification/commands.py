@@ -100,7 +100,8 @@ def split(input_data, output_train, output_test, test_ratio):
     output_train_path = get_output_path(output_train)
     output_test_path = get_output_path(output_test)
 
-    with open(input_data_path, 'rb') as f:
+    with open(input_data_path, 'r') as f:
+        import ipdb; ipdb.set_trace()
         data = f.read().split('\n')
 
     index = round(len(data) * test_ratio)
@@ -114,16 +115,16 @@ def split(input_data, output_train, output_test, test_ratio):
 
 @classification.command()
 @click.option('--input_data', default='data')
-@click.option('--output_preprocessed', default='data.preprocessed.txt')
-def preprocess(input_data, output_preprocessed):
+@click.option('--output_data', default='data.preprocessed.txt')
+def preprocess(input_data, output_data):
     input_data_path = get_input_path(input_data)
-    output_preprocessed_path = get_output_path(output_preprocessed)
+    output_data_path = get_output_path(output_data)
 
     df = pd.read_csv(
         input_data_path,
         engine='python')
 
-    with open(output_preprocessed_path, 'w') as output:
+    with open(output_data_path, 'w') as output:
         for f, c in zip(df[FEATURE_COLUMN], df[CATEGORY_COLUMN]):
             output.write(f'{process_string(f)} __label__{c}\n')
 

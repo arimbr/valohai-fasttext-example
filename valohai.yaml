@@ -8,7 +8,7 @@
       - name: data
         default: s3://valohai-fasttext-example/bbc/data.csv
     parameters:
-     - name: output_preprocessed
+     - name: output_data
        description: name of the output file
        type: string
        default: data.preprocessed.txt
