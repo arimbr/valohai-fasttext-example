@@ -5,6 +5,7 @@ import io
 import os
 import multiprocessing
 import shutil
+import random
 
 import click
 import pandas as pd
@@ -103,6 +104,11 @@ def split(input_data, output_train, output_test, test_ratio):
     with open(input_data_path, 'r') as f:
         data = f.read().split('\n')
 
+    # Shuffle data
+    random.seed(RANDOM_SEED)
+    random.shuffle(data)
+
+    # Split train and test data
     index = round(len(data) * test_ratio)
 
     with open(output_train_path, 'w') as f:
