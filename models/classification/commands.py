@@ -109,10 +109,10 @@ def split(input_data, output_train, output_test, test_ratio):
     # Split train and test data
     index = round(len(data) * test_ratio)
 
-    with open(output_train_path, 'w') as f:
+    with open(output_test_path, 'w') as f:
         f.write('\n'.join(data[:index]))
 
-    with open(output_test_path, 'w') as f:
+    with open(output_train_path, 'w') as f:
         f.write('\n'.join(data[index:]))
 
 
