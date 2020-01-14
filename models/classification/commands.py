@@ -100,7 +100,7 @@ def split(input_data, output_train, output_test, test_ratio):
     output_test_path = get_output_path(output_test)
 
     with open(input_data_path, 'r') as f:
-        data = f.read().split('\n')
+        data = f.read().strip().split('\n')
 
     # Shuffle data
     random.seed(RANDOM_SEED)
