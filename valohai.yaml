@@ -55,11 +55,11 @@
      - name: duration
        description: maximum duration in seconds [300]
        type: integer
-       default: 300
+       default: 500
      - name: model_size
        description: constraint model file size [] (empty = do not quantize)
        type: string
-       default: ''
+       default: '2000M'
 
 - step:
     name: predict
