@@ -114,5 +114,5 @@
       - [split.output.test.preprocessed.txt, autotune.input.test]
       - [split.output.test.preprocessed.txt, predict.input.data]
       - [autotune.output.parameters.json, train.input.parameters]
-      - [autotune.output.model.bin, predict.input.model]
+      - [autotune.output.train.model.bin, predict.input.model]
       # - [predict.output.test.predictions.txt, evaluate.input.predictions]

@@ -131,7 +131,7 @@ def preprocess(input_data, output_data):
 @classification.command()
 @click.option('--input_train', default='train')
 @click.option('--input_test', default='test')
-@click.option('--output_model', default='model.bin')
+@click.option('--output_model', default='train.model.bin')
 @click.option('--output_parameters', default='parameters.json')
 @click.option('--metric', default='f1')
 @click.option('--k', default=1)
@@ -208,7 +208,7 @@ def predict(input_data, input_model, output_predictions, k):
 @classification.command()
 @click.option('--input_data', default='data')
 @click.option('--input_parameters', default='parameters')
-@click.option('--output_model', default='model.bin')
+@click.option('--output_model', default='data.model.bin')
 def train(input_data, input_parameters, output_model):
     input_data_path = get_input_path(input_data)
     input_parameters_path = get_input_path(input_parameters)
