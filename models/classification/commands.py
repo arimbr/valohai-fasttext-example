@@ -94,6 +94,7 @@ def collect_bbc_data(input_dir, output_file):
 @click.option('--output_train', default='train.preprocessed.txt')
 @click.option('--output_test', default='test.preprocessed.txt')
 @click.option('--test_ratio', default=0.25)
+@click.option('--shuffle', default=True)
 def split(input_data, output_train, output_test, test_ratio):
     input_data_path = get_input_path(input_data)
     output_train_path = get_output_path(output_train)
@@ -103,8 +104,9 @@ def split(input_data, output_train, output_test, test_ratio):
         data = f.read().strip().split('\n')
 
     # Shuffle data
-    random.seed(RANDOM_SEED)
-    random.shuffle(data)
+    if shuffle:
+        random.seed(RANDOM_SEED)
+        random.shuffle(data)
 
     # Split train and test data
     index = round(len(data) * test_ratio)

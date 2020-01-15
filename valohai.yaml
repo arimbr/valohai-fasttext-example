@@ -33,6 +33,10 @@
         description: ratio of the test data
         type: float
         default: 0.25
+      - name: shuffle
+        description: ratio of the test data
+        type: boolean
+        default: true
 
 - step:
     name: autotune
