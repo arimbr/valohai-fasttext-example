@@ -95,7 +95,7 @@ def collect_bbc_data(input_dir, output_file):
 @click.option('--output_test', default='test.preprocessed.txt')
 @click.option('--test_ratio', default=0.25)
 @click.option('--shuffle', default=True)
-def split(input_data, output_train, output_test, test_ratio):
+def split(input_data, output_train, output_test, test_ratio, shuffle):
     input_data_path = get_input_path(input_data)
     output_train_path = get_output_path(output_train)
     output_test_path = get_output_path(output_test)
