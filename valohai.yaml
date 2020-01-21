@@ -11,7 +11,7 @@
      - name: output_data
        description: name of the output file
        type: string
-       default: data_preprocessed.txt
+       default: preprocessed.txt
 
 - step:
     name: split
@@ -57,8 +57,8 @@
     inputs:
       - name: train
         default: s3://valohai-fasttext-example/bbc/train_preprocessed.txt
-      - name: test
-        default: s3://valohai-fasttext-example/bbc/test_preprocessed.txt
+      - name: validation
+        default: s3://valohai-fasttext-example/bbc/validation_preprocessed.txt
     parameters:
      - name: metric
        description: metric objective {f1, f1:labelname}
