@@ -19,22 +19,34 @@
     command: python cli.py classification split {parameters}
     inputs:
       - name: data
-        default: s3://valohai-fasttext-example/bbc/data.preprocessed.txt
+        default: s3://valohai-fasttext-example/bbc/preprocessed.txt
     parameters:
       - name: output_train
         description: name of the train output file
         type: string
-        default: train.preprocessed.txt
+        default: train_preprocessed.txt
+      - name: output_validation
+        description: name of the validation output file
+        type: string
+        default: validation_preprocessed.txt
       - name: output_test
         description: name of the test output file
         type: string
-        default: test.preprocessed.txt
+        default: test_preprocessed.txt
+      - name: train_ratio
+        description: ratio of the train data
+        type: float
+        default: 0.8
+      - name: validation_ratio
+        description: ratio of the validation data
+        type: float
+        default: 0.1
       - name: test_ratio
         description: ratio of the test data
         type: float
-        default: 0.25
+        default: 0.1
       - name: shuffle
-        description: ratio of the test data
+        description: shuffle data
         type: flag
         default: true
 
@@ -44,41 +56,26 @@
     command: python cli.py classification autotune {parameters}
     inputs:
       - name: train
-        default: s3://valohai-fasttext-example/bbc/train.preprocessed.txt
+        default: s3://valohai-fasttext-example/bbc/train_preprocessed.txt
       - name: test
-        default: s3://valohai-fasttext-example/bbc/test.preprocessed.txt
+        default: s3://valohai-fasttext-example/bbc/test_preprocessed.txt
     parameters:
      - name: metric
-       description: metric objective {f1, f1:labelname} [f1]
+       description: metric objective {f1, f1:labelname}
        type: string
        default: f1
      - name: k
-       description: number of predictions used for evaluation [1]
+       description: number of predictions used for evaluation
        type: integer
        default: 1
      - name: duration
-       description: maximum duration in seconds [300]
+       description: maximum duration in seconds
        type: integer
        default: 500
      - name: model_size
-       description: constraint model file size [] (empty = do not quantize)
+       description: constraint model file size (empty = do not quantize)
        type: string
        default: '2000M'
-
-- step:
-    name: predict
-    image: arimbr/valohai-fasttext-example
-    command: python cli.py classification predict {parameters}
-    inputs:
-      - name: data
-        default: s3://valohai-fasttext-example/bbc/test.preprocessed.txt
-      - name: model
-        default: s3://valohai-fasttext-example/bbc/train.model.bin
-    parameters:
-     - name: k
-       description: number of labels to predict [1]
-       type: integer
-       default: 1
 
 - step:
     name: train
@@ -86,12 +83,41 @@
     command: python cli.py classification train {parameters}
     inputs:
       - name: data
-        default: s3://valohai-fasttext-example/bbc/data.preprocessed.txt
+        default: s3://valohai-fasttext-example/bbc/preprocessed.txt
       - name: parameters
         default: s3://valohai-fasttext-example/bbc/parameters.json
 
+- step:
+    name: test
+    image: arimbr/valohai-fasttext-example
+    command: python cli.py classification test {parameters}
+    inputs:
+      - name: test
+        default: s3://valohai-fasttext-example/bbc/test_preprocessed.txt
+      - name: model
+        default: s3://valohai-fasttext-example/bbc/train_model.bin
+    parameters:
+     - name: k
+       description: number of labels to predict
+       type: integer
+       default: 1
+
+- step:
+    name: predict
+    image: arimbr/valohai-fasttext-example
+    command: python cli.py classification predict {parameters}
+    inputs:
+      - name: data
+      - name: model
+        default: s3://valohai-fasttext-example/bbc/model.bin
+    parameters:
+     - name: k
+       description: number of labels to predict
+       type: integer
+       default: 1
+
 - pipeline:
-    name: fasttext-pipeline
+    name: fasttext-train
     nodes:
       - name: split
         type: execution
@@ -105,18 +131,14 @@
       - name: train
         type: execution
         step: train
-      - name: predict
+      - name: test
         type: execution
-        step: predict
-      #- name: evaluate
-      #  type: execution
-      #  step: evaluate
+        step: test
     edges:
-      - [preprocess.output.data.preprocessed.txt, split.input.data]
-      - [preprocess.output.data.preprocessed.txt, train.input.data]
-      - [split.output.train.preprocessed.txt, autotune.input.train]
-      - [split.output.test.preprocessed.txt, autotune.input.test]
-      - [split.output.test.preprocessed.txt, predict.input.data]
+      - [preprocess.output.data_preprocessed.txt, split.input.data]
+      - [preprocess.output.data_preprocessed.txt, train.input.data]
+      - [split.output.train_preprocessed.txt, autotune.input.train]
+      - [split.output.validation_preprocessed.txt, autotune.input.validation]
+      - [split.output.test_preprocessed.txt, test.input.test]
       - [autotune.output.parameters.json, train.input.parameters]
-      - [autotune.output.train.model.bin, predict.input.model]
-      # - [predict.output.test.predictions.txt, evaluate.input.predictions]
+      - [autotune.output.train_model.bin, test.input.model]

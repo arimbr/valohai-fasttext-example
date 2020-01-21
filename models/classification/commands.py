@@ -12,9 +12,12 @@ import fasttext
 from utils import get_input_path, get_output_path
 
 
-FEATURE_COLUMN = 'text'
-CATEGORY_COLUMN = 'category'
+TEXT_COLUMN = 'text'
+LABEL_COLUMN = 'label'
+LABEL_SEPARATOR = '__label__'
+PROBABILITY_COLUMN = 'p'
 RANDOM_SEED = 42
+VERBOSE = 3
 
 train_parameters = {
     'lr': 0.1,
@@ -31,7 +34,7 @@ train_parameters = {
     'thread': multiprocessing.cpu_count() - 1,
     'lrUpdateRate': 100,
     't': 1e-4,
-    'label': '__label__',
+    'label': LABEL_SEPARATOR,
     'verbose': 2,
     'pretrainedVectors': '',
     'seed': 0,
@@ -51,19 +54,33 @@ def get_model_parameters(model):
 
 
 def split_text(text):
-    text, label = text.split('__label__')
+    text, label = text.split(LABEL_SEPARATOR)
     return text.strip(), label.strip()
 
 
-def process_string(s):
+def process_text(text):
     # Transform multiple spaces and \n to a single space
-    s = re.sub(r'\s{1,}', ' ', s)
+    text = re.sub(r'\s{1,}', ' ', text)
     # Remove punctuation
     remove_punct_map = dict.fromkeys(map(ord, string.punctuation))
-    s = s.translate(remove_punct_map)
+    text = text.translate(remove_punct_map)
     # Transform to lowercase
-    s = s.lower()
-    return s
+    text = text.lower()
+    return text
+
+
+def get_predictions_df(all_labels, all_probs, k):
+    labels_columns = [f'{LABEL_COLUMN}@{i}' for i in range(1, k+1)]
+    probs_columns = [f'{PROBABILITY_COLUMN}@{i}' for i in range(1, k+1)]
+
+    regex = re.compile(r'{}'.format(LABEL_SEPARATOR))
+    def format_labels(labels):
+        return [re.sub(regex, '', label) for label in labels]
+
+    return pd.DataFrame((
+        format_labels(labels) + list(probs)
+        for labels, probs in zip(all_labels, all_probs)
+    ), columns=labels_columns + probs_columns)
 
 
 @click.group()
@@ -84,20 +101,44 @@ def collect_bbc_data(input_dir, output_file):
                     text = open(os.path.join(root, fname), 'rb').read()
                     yield text.decode('latin-1'), category
 
-    df = pd.DataFrame(rows_generator(), columns=['text', 'category'])
+    df = pd.DataFrame(rows_generator(), columns=[TEXT_COLUMN, LABEL_COLUMN])
 
     df.to_csv(output_file, index=False)
 
 
 @classification.command()
 @click.option('--input_data', default='data')
-@click.option('--output_train', default='train.preprocessed.txt')
-@click.option('--output_test', default='test.preprocessed.txt')
-@click.option('--test_ratio', default=0.25)
+@click.option('--output_data', default='preprocessed.txt')
+def preprocess(input_data, output_data):
+    # TODO: make it work also with prediction data without label
+    input_data_path = get_input_path(input_data)
+    output_data_path = get_output_path(output_data)
+
+    df = pd.read_csv(
+        input_data_path,
+        engine='python')
+
+    with open(output_data_path, 'w') as output:
+        for text, label in zip(df[TEXT_COLUMN], df[LABEL_COLUMN]):
+            output.write(f'{process_text(text)} {LABEL_SEPARATOR}{label}\n')
+
+
+@classification.command()
+@click.option('--input_data', default='data')
+@click.option('--output_train', default='train_preprocessed.txt')
+@click.option('--output_validation', default='validation_preprocessed.txt')
+@click.option('--output_test', default='test_preprocessed.txt')
+@click.option('--train_ratio', default=0.8)
+@click.option('--validation_ratio', default=0.1)
+@click.option('--test_ratio', default=0.1)
 @click.option('--shuffle', default=True)
-def split(input_data, output_train, output_test, test_ratio, shuffle):
+def split(input_data, output_train, output_validation, output_test,
+    train_ratio, validation_ratio, test_ratio, shuffle):
+    assert train_ratio + validation_ratio + test_ratio == 1
+
     input_data_path = get_input_path(input_data)
     output_train_path = get_output_path(output_train)
+    output_validation_path = get_output_path(output_validation)
     output_test_path = get_output_path(output_test)
 
     with open(input_data_path, 'r') as f:
@@ -108,68 +149,53 @@ def split(input_data, output_train, output_test, test_ratio, shuffle):
         random.seed(RANDOM_SEED)
         random.shuffle(data)
 
-    # Split train and test data
-    index = round(len(data) * test_ratio)
-
-    with open(output_test_path, 'w') as f:
-        f.write('\n'.join(data[:index]))
+    # Split train, validation and test data
+    validation_index = round(len(data) * train_ratio)
+    test_index = round(len(data) * (train_ratio + validation_ratio))
 
     with open(output_train_path, 'w') as f:
-        f.write('\n'.join(data[index:]))
+        f.write('\n'.join(data[:validation_index]))
 
+    with open(output_validation_path, 'w') as f:
+        f.write('\n'.join(data[validation_index:test_index]))
 
-@classification.command()
-@click.option('--input_data', default='data')
-@click.option('--output_data', default='data.preprocessed.txt')
-def preprocess(input_data, output_data):
-    input_data_path = get_input_path(input_data)
-    output_data_path = get_output_path(output_data)
-
-    df = pd.read_csv(
-        input_data_path,
-        engine='python')
-
-    with open(output_data_path, 'w') as output:
-        for f, c in zip(df[FEATURE_COLUMN], df[CATEGORY_COLUMN]):
-            output.write(f'{process_string(f)} __label__{c}\n')
+    with open(output_test_path, 'w') as f:
+        f.write('\n'.join(data[test_index:]))
 
 
 @classification.command()
 @click.option('--input_train', default='train')
-@click.option('--input_test', default='test')
-@click.option('--output_model', default='train.model.bin')
+@click.option('--input_validation', default='validation')
+@click.option('--output_model', default='train_model.bin')
 @click.option('--output_parameters', default='parameters.json')
 @click.option('--metric', default='f1')
 @click.option('--k', default=1)
 @click.option('--duration', default=300)
 @click.option('--model_size', default='')
-@click.option('--verbose', default=3)
-def autotune(input_train, input_test, output_model, output_parameters,
-    metric, k, duration, model_size, verbose):
+def autotune(input_train, input_validation, output_model, output_parameters,
+    metric, k, duration, model_size):
     input_train_path = get_input_path(input_train)
-    input_test_path = get_input_path(input_test)
+    input_validation_path = get_input_path(input_validation)
     output_model_path = get_output_path(output_model)
     output_parameters_path = get_output_path(output_parameters)
 
     # Autotune model
     model = fasttext.train_supervised(
         input=input_train_path,
-        autotuneValidationFile=input_test_path,
+        autotuneValidationFile=input_validation_path,
         autotuneMetric=metric,
         autotuneDuration=duration,
         autotuneModelSize=model_size,
-        verbose=verbose)
+        verbose=VERBOSE)
 
-    # Test best model
-    n, p, r = model.test(input_test_path, k=k)
+    # Log best model metrics
+    n, p, r = model.test(input_validation_path, k=k)
     print(json.dumps(
         {'n': n, 'precision': p, 'recall': r, 'k': k}))
 
     # Save best parameters
-    best_parameters = get_model_parameters(model)
-    print(json.dumps(best_parameters))
     with open(output_parameters_path, 'w') as f:
-        json.dump(best_parameters, f)
+        json.dump(get_model_parameters(model), f)
 
     # Save best model
     model.save_model(output_model_path)
@@ -177,44 +203,8 @@ def autotune(input_train, input_test, output_model, output_parameters,
 
 @classification.command()
 @click.option('--input_data', default='data')
-@click.option('--input_model', default='model')
-@click.option('--output_predictions', default='predictions.csv')
-@click.option('--k', default=1)
-def predict(input_data, input_model, output_predictions, k):
-    input_data_path = get_input_path(input_data)
-    input_model_path = get_input_path(input_model)
-    output_predictions_path = get_output_path(output_predictions)
-
-    model = fasttext.load_model(input_model_path)
-
-    # TODO: make this work also with unlabelled data
-    with open(input_data_path) as f:
-        df = pd.DataFrame(
-            (split_text(line) for line in f),
-            columns=['text', 'label'])
-
-        all_labels, all_probs = model.predict(list(df['text']), k=k)
-
-        columns = [f'prediction@{i}' for i in range(1, k+1)] + [f'p@{i}' for i in range(1, k+1)]
-        predictions_df = pd.DataFrame((
-            list(record_labels) + list(record_probs)
-            for record_labels, record_probs in zip(all_labels, all_probs)
-        ), columns=columns)
-
-    df = df.join(predictions_df)
-
-    # Remove __label__ from prediction columns
-    for col in df.columns:
-        if col.startswith('prediction@'):
-            df[col] = df[col].str.replace('__label__', '')
-
-    df.to_csv(output_predictions_path, index=False)
-
-
-@classification.command()
-@click.option('--input_data', default='data')
 @click.option('--input_parameters', default='parameters')
-@click.option('--output_model', default='data.model.bin')
+@click.option('--output_model', default='model.bin')
 def train(input_data, input_parameters, output_model):
     input_data_path = get_input_path(input_data)
     input_parameters_path = get_input_path(input_parameters)
@@ -229,5 +219,73 @@ def train(input_data, input_parameters, output_model):
         input=input_data_path,
         **parameters)
 
-    # Save best model
+    # Save model
     model.save_model(output_model_path)
+
+
+@classification.command()
+@click.option('--input_test', default='test')
+@click.option('--input_model', default='model')
+@click.option('--output_predictions', default='test_predictions.csv')
+@click.option('--k', default=1)
+def test(input_test, input_model, output_predictions, k):
+    input_test_path = get_input_path(input_test)
+    input_model_path = get_input_path(input_model)
+    output_predictions_path = get_output_path(output_predictions)
+
+    model = fasttext.load_model(input_model_path)
+
+    # Log model metrics
+    n, p, r = model.test(input_test_path, k=k)
+    print(json.dumps(
+        {'n': n, 'precision': p, 'recall': r, 'k': k}))
+
+    # Split feature and category in a DataFrame
+    with open(input_test_path) as f:
+        df = pd.DataFrame(
+            (split_text(line) for line in f),
+            columns=[TEXT_COLUMN, LABEL_COLUMN])
+
+    # Get predictions
+    all_labels, all_probs = model.predict(
+        list(df[TEXT_COLUMN]), k=k)
+
+    # Add formatted predictions
+    predictions_df = get_predictions_df(all_labels, all_probs, k)
+    df = df.join(predictions_df)
+
+    # Add error column
+    df['error'] = (df[f'{LABEL_COLUMN}'] != df[f'{LABEL_COLUMN}@1'])
+
+    # Save predictions
+    df.to_csv(output_predictions_path, index=False)
+
+
+@classification.command()
+@click.option('--input_data', default='data')
+@click.option('--input_model', default='model')
+@click.option('--output_predictions', default='predictions.csv')
+@click.option('--k', default=1)
+def predict(input_data, input_model, output_predictions, k):
+    input_data_path = get_input_path(input_data)
+    input_model_path = get_input_path(input_model)
+    output_predictions_path = get_output_path(output_predictions)
+
+    model = fasttext.load_model(input_model_path)
+
+    # Create text DataFrame
+    with open(input_data_path) as f:
+        df = pd.DataFrame(
+            (line for line in f),
+            columns=[TEXT_COLUMN])
+
+    # Get predictions
+    all_labels, all_probs = model.predict(
+        list(df[TEXT_COLUMN]), k=k)
+
+    # Add formatted predictions
+    predictions_df = get_predictions_df(all_labels, all_probs, k)
+    df = df.join(predictions_df)
+
+    # Save predictions
+    df.to_csv(output_predictions_path, index=False)
