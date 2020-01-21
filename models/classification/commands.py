@@ -131,7 +131,7 @@ def preprocess(input_data, output_data):
 @click.option('--train_ratio', default=0.8)
 @click.option('--validation_ratio', default=0.1)
 @click.option('--test_ratio', default=0.1)
-@click.option('--shuffle', default=True)
+@click.option('--shuffle', is_flag=True)
 def split(input_data, output_train, output_validation, output_test,
     train_ratio, validation_ratio, test_ratio, shuffle):
     assert train_ratio + validation_ratio + test_ratio == 1
