@@ -135,8 +135,8 @@
         type: execution
         step: test
     edges:
-      - [preprocess.output.data_preprocessed.txt, split.input.data]
-      - [preprocess.output.data_preprocessed.txt, train.input.data]
+      - [preprocess.output.preprocessed.txt, split.input.data]
+      - [preprocess.output.preprocessed.txt, train.input.data]
       - [split.output.train_preprocessed.txt, autotune.input.train]
       - [split.output.validation_preprocessed.txt, autotune.input.validation]
       - [split.output.test_preprocessed.txt, test.input.test]
