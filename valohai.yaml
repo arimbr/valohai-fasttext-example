@@ -11,7 +11,7 @@
      - name: output_data
        description: name of the output file
        type: string
-       default: data.preprocessed.txt
+       default: data_preprocessed.txt
 
 - step:
     name: split
