@@ -71,7 +71,7 @@
      - name: duration
        description: maximum duration in seconds
        type: integer
-       default: 500
+       default: 1200
      - name: model_size
        description: constraint model file size (empty = do not quantize)
        type: string
