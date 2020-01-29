@@ -19,20 +19,19 @@
     command: python cli.py classification split {parameters}
     inputs:
       - name: data
-        default: s3://valohai-fasttext-example/bbc/preprocessed.txt
     parameters:
       - name: output_train
         description: name of the train output file
         type: string
-        default: train_preprocessed.txt
+        default: train.txt
       - name: output_validation
         description: name of the validation output file
         type: string
-        default: validation_preprocessed.txt
+        default: validation.txt
       - name: output_test
         description: name of the test output file
         type: string
-        default: test_preprocessed.txt
+        default: test.txt
       - name: train_ratio
         description: ratio of the train data
         type: float
@@ -56,9 +55,7 @@
     command: python cli.py classification autotune {parameters}
     inputs:
       - name: train
-        default: s3://valohai-fasttext-example/bbc/train_preprocessed.txt
       - name: validation
-        default: s3://valohai-fasttext-example/bbc/validation_preprocessed.txt
     parameters:
      - name: metric
        description: metric objective {f1, f1:labelname}
@@ -71,11 +68,11 @@
      - name: duration
        description: maximum duration in seconds
        type: integer
-       default: 1200
+       default: 1500
      - name: model_size
        description: constraint model file size (empty = do not quantize)
        type: string
-       default: '2000M'
+       default: 2000M
 
 - step:
     name: train
@@ -83,9 +80,7 @@
     command: python cli.py classification train {parameters}
     inputs:
       - name: data
-        default: s3://valohai-fasttext-example/bbc/preprocessed.txt
       - name: parameters
-        default: s3://valohai-fasttext-example/bbc/parameters.json
 
 - step:
     name: test
@@ -93,9 +88,7 @@
     command: python cli.py classification test {parameters}
     inputs:
       - name: test
-        default: s3://valohai-fasttext-example/bbc/test_preprocessed.txt
       - name: model
-        default: s3://valohai-fasttext-example/bbc/train_model.bin
     parameters:
      - name: k
        description: number of labels to predict
@@ -109,7 +102,6 @@
     inputs:
       - name: data
       - name: model
-        default: s3://valohai-fasttext-example/bbc/model.bin
     parameters:
      - name: k
        description: number of labels to predict
@@ -137,8 +129,8 @@
     edges:
       - [preprocess.output.preprocessed.txt, split.input.data]
       - [preprocess.output.preprocessed.txt, train.input.data]
-      - [split.output.train_preprocessed.txt, autotune.input.train]
-      - [split.output.validation_preprocessed.txt, autotune.input.validation]
-      - [split.output.test_preprocessed.txt, test.input.test]
+      - [split.output.train.txt, autotune.input.train]
+      - [split.output.validation.txt, autotune.input.validation]
+      - [split.output.test.txt, test.input.test]
       - [autotune.output.parameters.json, train.input.parameters]
       - [autotune.output.train_model.bin, test.input.model]

@@ -125,9 +125,9 @@ def preprocess(input_data, output_data):
 
 @classification.command()
 @click.option('--input_data', default='data')
-@click.option('--output_train', default='train_preprocessed.txt')
-@click.option('--output_validation', default='validation_preprocessed.txt')
-@click.option('--output_test', default='test_preprocessed.txt')
+@click.option('--output_train', default='train.txt')
+@click.option('--output_validation', default='validation.txt')
+@click.option('--output_test', default='test.txt')
 @click.option('--train_ratio', default=0.8)
 @click.option('--validation_ratio', default=0.1)
 @click.option('--test_ratio', default=0.1)
@@ -146,6 +146,7 @@ def split(input_data, output_train, output_validation, output_test,
 
     # Shuffle data
     if shuffle:
+        print('Shuffling data')
         random.seed(RANDOM_SEED)
         random.shuffle(data)
 
@@ -170,8 +171,8 @@ def split(input_data, output_train, output_validation, output_test,
 @click.option('--output_parameters', default='parameters.json')
 @click.option('--metric', default='f1')
 @click.option('--k', default=1)
-@click.option('--duration', default=300)
-@click.option('--model_size', default='')
+@click.option('--duration', default=1200)
+@click.option('--model_size', default='2000M')
 def autotune(input_train, input_validation, output_model, output_parameters,
     metric, k, duration, model_size):
     input_train_path = get_input_path(input_train)
