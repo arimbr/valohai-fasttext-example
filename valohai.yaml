@@ -12,6 +12,14 @@
        description: name of the output file
        type: string
        default: preprocessed.txt
+     - name: text_column
+       description: name of the text column
+       type: string
+       default: text
+     - name: label_column
+       description: name of label column
+       type: string
+       default: label
 
 - step:
     name: split

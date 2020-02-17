@@ -109,7 +109,9 @@ def collect_bbc_data(input_dir, output_file):
 @classification.command()
 @click.option('--input_data', default='data')
 @click.option('--output_data', default='preprocessed.txt')
-def preprocess(input_data, output_data):
+@click.option('--text_column', default=TEXT_COLUMN)
+@click.option('--label_column', default=LABEL_COLUMN)
+def preprocess(input_data, output_data, text_column, label_column):
     # TODO: make it work also with prediction data without label
     input_data_path = get_input_path(input_data)
     output_data_path = get_output_path(output_data)
@@ -119,7 +121,7 @@ def preprocess(input_data, output_data):
         engine='python')
 
     with open(output_data_path, 'w') as output:
-        for text, label in zip(df[TEXT_COLUMN], df[LABEL_COLUMN]):
+        for text, label in zip(df[text_column], df[label_column]):
             output.write(f'{process_text(text)} {LABEL_SEPARATOR}{label}\n')
 
 
