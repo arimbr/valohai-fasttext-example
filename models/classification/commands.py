@@ -40,6 +40,10 @@ train_parameters = {
     'seed': 0,
 }
 
+def not_empty_str(x):
+    return isinstance(x, str) and x != ''
+
+
 def get_model_parameters(model):
     args_getter = model.f.getArgs()
 
@@ -122,7 +126,8 @@ def preprocess(input_data, output_data, text_column, label_column):
 
     with open(output_data_path, 'w') as output:
         for text, label in zip(df[text_column], df[label_column]):
-            output.write(f'{process_text(text)} {LABEL_SEPARATOR}{label}\n')
+            if not_empty_str(text) and not_empty_str(label):
+                output.write(f'{process_text(text)} {LABEL_SEPARATOR}{label}\n')
 
 
 @classification.command()
