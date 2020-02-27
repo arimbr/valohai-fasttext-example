@@ -19,13 +19,20 @@ class SubredditModel(BaseModel):
 	probas: List[float]
 
 
+# Initialize model
+model = fasttext.load_model(MODEL_PATH)
+
+# Initialize API
 app = FastAPI()
 
 
-@app.post("/predict", response_model=SubredditModel)
-def predict(post: PostModel):
-	model = fasttext.load_model(MODEL_PATH)
+@app.get("/")
+def hello():
+	return 'OK'
 
+
+@app.post("/", response_model=SubredditModel)
+def predict(post: PostModel):
 	# Concatenate title and text to preprocess
 	print(f'title: {post.title}, text: {post.text}')
 	data = process_text(f'{post.title} {post.text}')
