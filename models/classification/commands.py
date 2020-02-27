@@ -40,6 +40,14 @@ train_parameters = {
     'seed': 0,
 }
 
+
+CLEAN_LABEL_REGEX = re.compile(r'{}'.format(LABEL_SEPARATOR))
+
+
+def format_labels(labels):
+    return [re.sub(CLEAN_LABEL_REGEX, '', label) for label in labels]
+
+
 def not_empty_str(x):
     return isinstance(x, str) and x != ''
 
@@ -77,10 +85,6 @@ def get_predictions_df(all_labels, all_probs, k):
     labels_columns = [f'{LABEL_COLUMN}@{i}' for i in range(1, k+1)]
     probs_columns = [f'{PROBABILITY_COLUMN}@{i}' for i in range(1, k+1)]
 
-    regex = re.compile(r'{}'.format(LABEL_SEPARATOR))
-    def format_labels(labels):
-        return [re.sub(regex, '', label) for label in labels]
-
     return pd.DataFrame((
         format_labels(labels) + list(probs)
         for labels, probs in zip(all_labels, all_probs)
@@ -116,6 +120,7 @@ def collect_bbc_data(input_dir, output_file):
 @click.option('--text_column', default=TEXT_COLUMN)
 @click.option('--label_column', default=LABEL_COLUMN)
 def preprocess(input_data, output_data, text_column, label_column):
+    # TODO: support to pass a list of comma separated columns in text_column
     # TODO: make it work also with prediction data without label
     input_data_path = get_input_path(input_data)
     output_data_path = get_output_path(output_data)

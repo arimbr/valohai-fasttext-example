@@ -142,3 +142,14 @@
       - [split.output.test.txt, test.input.test]
       - [autotune.output.parameters.json, train.input.parameters]
       - [autotune.output.train_model.bin, test.input.model]
+
+- endpoint
+    name: predict
+    description: Predict subreddit from post title and text
+    image: arimbr/valohai-fasttext-example
+    port: 8000
+    server-command: uvicorn api:app --host 0.0.0.0 --port 8000
+    files:
+      - name: model
+        description: Model output file from training step.
+        path: model.bin
