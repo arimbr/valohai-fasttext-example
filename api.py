@@ -26,12 +26,12 @@ model = fasttext.load_model(MODEL_PATH)
 app = FastAPI()
 
 
-@app.get("/predict")
+@app.get(".*/predict")
 def hello():
     return 'OK'
 
 
-@app.post("/predict", response_model=SubredditModel)
+@app.post(".*/predict", response_model=SubredditModel)
 def predict(post: PostModel):
     # Concatenate title and text to preprocess
     print(f'title: {post.title}, text: {post.text}')
