@@ -124,14 +124,17 @@ def collect_bbc_data(input_dir, output_file):
 @click.option('--text_column', default=TEXT_COLUMN)
 @click.option('--label_column', default=LABEL_COLUMN)
 def preprocess(input_data, output_data, text_column, label_column):
-    # TODO: support to pass a list of comma separated columns in text_column
     # TODO: make it work also with prediction data without label
     input_data_path = get_input_path(input_data)
     output_data_path = get_output_path(output_data)
 
     df = pd.read_csv(
         input_data_path,
-        engine='python')
+        engine='python').fillna('')
+
+    # Concatenate strings if multiple text columns
+    if ',' in text_column:
+        df[text_column] = df[text_column.split(',')].agg(' '.join, axis=1)
 
     with open(output_data_path, 'w') as output:
         for text, label in zip(df[text_column], df[label_column]):

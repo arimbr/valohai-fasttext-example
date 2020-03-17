@@ -13,7 +13,7 @@
        type: string
        default: preprocessed.txt
      - name: text_column
-       description: name of the text column
+       description: name of the text column (pass multiple column names separated with a ,)
        type: string
        default: text
      - name: label_column
