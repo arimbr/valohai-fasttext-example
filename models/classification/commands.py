@@ -44,8 +44,12 @@ train_parameters = {
 CLEAN_LABEL_REGEX = re.compile(r'{}'.format(LABEL_SEPARATOR))
 
 
+def format_label(label):
+    return re.sub(CLEAN_LABEL_REGEX, '', label)
+
+
 def format_labels(labels):
-    return [re.sub(CLEAN_LABEL_REGEX, '', label) for label in labels]
+    return [format_label(label) for label in labels]
 
 
 def not_empty_str(x):

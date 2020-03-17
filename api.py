@@ -4,19 +4,22 @@ import fasttext
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from models.classification.commands import process_text, format_labels
+from models.classification.commands import process_text, format_label
 
 MODEL_PATH = 'model.bin'
 
 
-class PostModel(BaseModel):
-    title: str
+class InputModel(BaseModel):
     text: str
 
 
-class SubredditModel(BaseModel):
-    labels: List[str]
-    probas: List[float]
+class PredictionModel(BaseModel):
+    label: str
+    probability: float
+
+
+class PredictionsModel(BaseModel):
+    predictions: List[PredictionModel]
 
 
 # Initialize model
@@ -31,14 +34,22 @@ def hello():
     return 'OK'
 
 
-@app.post(".*/predict", response_model=SubredditModel)
-def predict(post: PostModel):
-    # Concatenate title and text to preprocess
-    print(f'title: {post.title}, text: {post.text}')
-    data = process_text(f'{post.title} {post.text}')
+@app.post(".*/predict", response_model=PredictionsModel)
+def predict(input: InputModel, k: int = 10):
+    # Preprocess data
+    print(f'input: {input}')
+    data = process_text(input.text)
 
     # Get predictions
-    # TODO: parametrize k
-    labels, probas = model.predict(data, k=10)
+    labels, probas = model.predict(data, k=k)
 
-    return SubredditModel(labels=format_labels(labels), probas=list(probas))
+    # Format predictions
+    predictions = [{
+        'label': format_label(label),
+        'probability': proba
+    } for label, proba in zip(labels, probas)]
+
+    # Log input and output
+    print(f'{{input: {input.text}, predictions: {predictions}}}')
+
+    return {'predictions': predictions}
