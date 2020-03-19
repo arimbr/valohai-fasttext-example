@@ -153,8 +153,6 @@ def preprocess(input_data, output_data, text_column, label_column):
 @click.option('--shuffle', is_flag=True)
 def split(input_data, output_train, output_validation, output_test,
     train_ratio, validation_ratio, test_ratio, shuffle):
-    assert train_ratio + validation_ratio + test_ratio == 1
-
     input_data_path = get_input_path(input_data)
     output_train_path = get_output_path(output_train)
     output_validation_path = get_output_path(output_validation)
@@ -172,6 +170,7 @@ def split(input_data, output_train, output_validation, output_test,
     # Split train, validation and test data
     validation_index = round(len(data) * train_ratio)
     test_index = round(len(data) * (train_ratio + validation_ratio))
+    end_index = round(len(data) * (train_ratio + validation_ratio + test_ratio))
 
     with open(output_train_path, 'w') as f:
         f.write('\n'.join(data[:validation_index]))
@@ -180,7 +179,7 @@ def split(input_data, output_train, output_validation, output_test,
         f.write('\n'.join(data[validation_index:test_index]))
 
     with open(output_test_path, 'w') as f:
-        f.write('\n'.join(data[test_index:]))
+        f.write('\n'.join(data[test_index:end_index]))
 
 
 @classification.command()
