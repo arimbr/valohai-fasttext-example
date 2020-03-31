@@ -1,3 +1,6 @@
+import json
+import logging
+import uuid
 from typing import List, Dict
 
 import fasttext
@@ -8,8 +11,10 @@ from models.classification.commands import process_text, format_label
 
 MODEL_PATH = 'model.bin'
 
+logger = logging.getLogger(__name__)
 
-class InputModel(BaseModel):
+
+class FeaturesModel(BaseModel):
     text: str
 
 
@@ -35,10 +40,15 @@ def hello():
 
 
 @app.post(".*/predict", response_model=PredictionsModel)
-def predict(input: InputModel, k: int = 10):
+def predict(features: FeaturesModel, k: int = 10, decimals: int = 2):
+    request_id = uuid.uuid4().hex
+
+    # Log features
+    logger.info(json.dumps(
+        {'request_id': request_id, 'features': features.dict()}))
+
     # Preprocess data
-    print(f'input: {input}')
-    data = process_text(input.text)
+    data = process_text(features.text)
 
     # Get predictions
     labels, probas = model.predict(data, k=k)
@@ -46,10 +56,11 @@ def predict(input: InputModel, k: int = 10):
     # Format predictions
     predictions = [{
         'label': format_label(label),
-        'probability': proba
+        'probability': round(proba, decimals)
     } for label, proba in zip(labels, probas)]
 
-    # Log input and output
-    print(f'{{input: {input.text}, predictions: {predictions}}}')
+    # Log predictions
+    logger.info(json.dumps(
+        {'request_id': request_id, 'predictions': predictions}))
 
     return {'predictions': predictions}
