@@ -1,4 +1,4 @@
-# Example Production Machine Learning Pipeline for Text Classification
+# Production Machine Learning Pipeline for Text Classification
 
 This repository is the support for two articles:
 - [Production Machine Learning Pipeline for Text Classification with fastText](https://blog.valohai.com/production-machine-learning-pipeline-text-classification-fasttext)
