@@ -145,7 +145,7 @@
 
 - endpoint:
     name: predict
-    description: Predict subreddit from post title and text
+    description: Predict labels from text
     image: arimbr/valohai-fasttext-example:deployment
     port: 8000
     server-command: uvicorn api:app --host 0.0.0.0 --port 8000
