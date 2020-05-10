@@ -21,7 +21,7 @@
        type: string
        default: label
      - name: engine
-       description: CSV parser engine to use (python, C)
+       description: CSV parser engine to use (python, python-fwf, c)
        type: string
        default: label
 
