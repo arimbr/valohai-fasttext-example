@@ -20,6 +20,10 @@
        description: name of label column
        type: string
        default: label
+     - name: engine
+       description: CSV parser engine to use (python, C)
+       type: string
+       default: label
 
 - step:
     name: split
