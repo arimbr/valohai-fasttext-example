@@ -23,7 +23,7 @@
      - name: engine
        description: CSV parser engine to use (python, python-fwf, c)
        type: string
-       default: label
+       default: python
 
 - step:
     name: split
